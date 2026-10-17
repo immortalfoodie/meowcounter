@@ -1,6 +1,6 @@
 /**
- * MeowCounter Backend Server
- * Ultra-lightweight, 100% free, zero external dependencies (pure Node.js http & fs).
+ * MeowCounter Backend Server & Vercel Serverless Entrypoint
+ * Ultra-lightweight, 100% free, zero external dependencies.
  * Serves static web assets and provides real persistent REST API for the public leaderboard.
  */
 
@@ -11,38 +11,73 @@ const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
-const LEADERBOARD_FILE = path.join(DATA_DIR, 'leaderboard.json');
+const TMP_FILE = path.join('/tmp', 'leaderboard.json');
+let memBoard = [];
 
-// Ensure data directory exists
-try {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+// --- Upstash / Vercel KV Support ---
+const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+async function runKVCommand(commandArray) {
+  if (!kvUrl || !kvToken) return null;
+  try {
+    const response = await fetch(kvUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${kvToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(commandArray)
+    });
+    const data = await response.json();
+    return data.result;
+  } catch (e) {
+    console.warn('KV command error, falling back:', e);
+    return null;
   }
-  if (!fs.existsSync(LEADERBOARD_FILE)) {
-    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify([], null, 2), 'utf8');
-  }
-} catch (e) {
-  // Read-only filesystem fallback
 }
 
-function readLeaderboard() {
-  try {
-    const raw = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Error reading leaderboard file:', err);
-    return [];
+async function readLeaderboardAsync() {
+  if (kvUrl && kvToken) {
+    try {
+      const resVal = await runKVCommand(['GET', 'global_meow_leaderboard']);
+      if (resVal) return JSON.parse(resVal);
+    } catch (e) {}
   }
+  // Safe /tmp storage fallback (writable on serverless)
+  try {
+    if (fs.existsSync(TMP_FILE)) {
+      return JSON.parse(fs.readFileSync(TMP_FILE, 'utf8'));
+    }
+  } catch (e) {}
+  // Local project file fallback (for local dev)
+  try {
+    const localFile = path.join(DATA_DIR, 'leaderboard.json');
+    if (fs.existsSync(localFile)) {
+      return JSON.parse(fs.readFileSync(localFile, 'utf8'));
+    }
+  } catch (e) {}
+  return memBoard;
 }
 
-function writeLeaderboard(data) {
-  try {
-    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(data, null, 2), 'utf8');
-    return true;
-  } catch (err) {
-    console.error('Error writing leaderboard file:', err);
-    return false;
+async function writeLeaderboardAsync(data) {
+  memBoard = data;
+  if (kvUrl && kvToken) {
+    try {
+      await runKVCommand(['SET', 'global_meow_leaderboard', JSON.stringify(data)]);
+      return true;
+    } catch (e) {}
   }
+  // Write to /tmp on serverless
+  try {
+    fs.writeFileSync(TMP_FILE, JSON.stringify(data), 'utf8');
+  } catch (e) {}
+  // Write to data/ locally if writable
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(path.join(DATA_DIR, 'leaderboard.json'), JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {}
+  return true;
 }
 
 // MIME types dictionary for static file serving
@@ -59,11 +94,37 @@ const MIME_TYPES = {
   '.mp3': 'audio/mpeg'
 };
 
-const server = http.createServer((req, res) => {
+// --- Wholesome Profanity Checker ---
+const FORBIDDEN_WORDS = [
+  'fuck', 'fuk', 'fck', 'shit', 'sh1t', 'bitch', 'b1tch', 'asshole', 'arsehole', 'badass',
+  'bastard', 'cunt', 'dick', 'cock', 'pussy', 'penis', 'vagina', 'boob', 'boobs',
+  'tit', 'tits', 'slut', 'whore', 'twat', 'wanker', 'wank', 'dildo', 'porn', 'anal',
+  'blowjob', 'handjob', 'nigger', 'nigga', 'faggot', 'fag', 'retard', 'hitler',
+  'nazi', 'rapist', 'rape', 'pedophile', 'pedophil', 'suicide', 'murder', 'terrorist'
+];
+
+function containsProfanity(text) {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase().trim();
+  const leetMap = {
+    '@': 'a', '4': 'a', '8': 'b', '3': 'e', '9': 'g',
+    '1': 'i', '!': 'i', '|': 'i', '0': 'o', '5': 's',
+    '$': 's', '7': 't', '+': 't', 'v': 'u'
+  };
+  let leetCleaned = '';
+  for (const char of lower) leetCleaned += leetMap[char] || char;
+  const alphaOnly = leetCleaned.replace(/[^a-z0-9]/g, '');
+  for (const bad of FORBIDDEN_WORDS) {
+    if (lower.includes(bad) || leetCleaned.includes(bad) || alphaOnly.includes(bad)) return true;
+  }
+  return false;
+}
+
+const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // CORS headers so this API can also be consumed from external frontends or mobile webviews
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -74,67 +135,42 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // --- Wholesome Profanity Checker ---
-  const FORBIDDEN_WORDS = [
-    'fuck', 'fuk', 'fck', 'shit', 'sh1t', 'bitch', 'b1tch', 'asshole', 'arsehole', 'badass',
-    'bastard', 'cunt', 'dick', 'cock', 'pussy', 'penis', 'vagina', 'boob', 'boobs',
-    'tit', 'tits', 'slut', 'whore', 'twat', 'wanker', 'wank', 'dildo', 'porn', 'anal',
-    'blowjob', 'handjob', 'nigger', 'nigga', 'faggot', 'fag', 'retard', 'hitler',
-    'nazi', 'rapist', 'rape', 'pedophile', 'pedophil', 'suicide', 'murder', 'terrorist'
-  ];
-
-  function containsProfanity(text) {
-    if (!text || typeof text !== 'string') return false;
-    const lower = text.toLowerCase().trim();
-    const leetMap = {
-      '@': 'a', '4': 'a', '8': 'b', '3': 'e', '9': 'g',
-      '1': 'i', '!': 'i', '|': 'i', '0': 'o', '5': 's',
-      '$': 's', '7': 't', '+': 't', 'v': 'u'
-    };
-    let leetCleaned = '';
-    for (const char of lower) leetCleaned += leetMap[char] || char;
-    const alphaOnly = leetCleaned.replace(/[^a-z0-9]/g, '');
-    for (const bad of FORBIDDEN_WORDS) {
-      if (lower.includes(bad) || leetCleaned.includes(bad) || alphaOnly.includes(bad)) return true;
-    }
-    return false;
-  }
-
   // --- API Endpoints ---
   
-  // GET /api/leaderboard -> returns real leaderboard entries sorted by spokenMeows or continuous
+  // GET /api/leaderboard
   if (req.method === 'GET' && pathname === '/api/leaderboard') {
-    const board = readLeaderboard();
-    const sortBy = parsedUrl.query && parsedUrl.query.sort;
-    if (sortBy === 'continuous') {
-      board.sort((a, b) => {
-        const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
-        if (streakDiff !== 0) return streakDiff;
-        // Tie-breaker: shorter time taken ranks higher
-        const aTime = a.continuousDurationSeconds || 999999;
-        const bTime = b.continuousDurationSeconds || 999999;
-        return aTime - bTime;
-      });
-    } else {
-      board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
+    try {
+      const board = await readLeaderboardAsync();
+      const sortBy = parsedUrl.query && parsedUrl.query.sort;
+      if (sortBy === 'continuous') {
+        board.sort((a, b) => {
+          const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
+          if (streakDiff !== 0) return streakDiff;
+          const aTime = a.continuousDurationSeconds || 999999;
+          const bTime = b.continuousDurationSeconds || 999999;
+          return aTime - bTime;
+        });
+      } else {
+        board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(board));
+    } catch (err) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify([]));
     }
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(board));
     return;
   }
 
-  // POST /api/leaderboard -> updates or creates a player's entry
+  // POST /api/leaderboard
   if (req.method === 'POST' && pathname === '/api/leaderboard') {
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();
-      // Guard against huge payload attacks
-      if (body.length > 50000) {
-        req.destroy();
-      }
+      if (body.length > 50000) req.destroy();
     });
 
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body);
         const { id, name, avatar, spokenMeows, continuousStreak, continuousDurationSeconds, continuousPace, tier } = payload;
@@ -151,7 +187,7 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        const board = readLeaderboard();
+        const board = await readLeaderboardAsync();
         const playerId = id || `user_${Date.now()}`;
         const existingIdx = board.findIndex(p => p.id === playerId || p.name.toLowerCase() === name.toLowerCase());
 
@@ -190,9 +226,8 @@ const server = http.createServer((req, res) => {
           board.push(updatedEntry);
         }
 
-        // Default sort descending by spokenMeows
         board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
-        writeLeaderboard(board);
+        await writeLeaderboardAsync(board);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, entry: updatedEntry, leaderboard: board }));
@@ -209,6 +244,11 @@ const server = http.createServer((req, res) => {
   let filePath = path.join(__dirname, 'public', safePath);
   if (!fs.existsSync(filePath)) {
     filePath = path.join(__dirname, safePath);
+  }
+
+  // Fallback to index.html for root or unknown subroutes
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, 'public', 'index.html');
   }
 
   // Prevent directory traversal attacks
@@ -245,4 +285,5 @@ if (require.main === module) {
   });
 }
 
+// Export for Vercel Serverless Function entrypoint
 module.exports = server;
