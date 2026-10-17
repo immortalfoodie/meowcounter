@@ -121,10 +121,6 @@ function containsProfanity(text) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const rawPath = req.headers['x-matched-path'] || req.headers['x-forwarded-url'] || req.url;
-  const parsedUrl = url.parse(rawPath, true);
-  const pathname = parsedUrl.pathname;
-
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -136,112 +132,144 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // --- API Endpoints ---
-  
-  // GET /api/leaderboard
-  if (req.method === 'GET' && pathname === '/api/leaderboard') {
-    try {
-      const board = await readLeaderboardAsync();
-      const sortBy = parsedUrl.query && parsedUrl.query.sort;
-      if (sortBy === 'continuous') {
-        board.sort((a, b) => {
-          const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
-          if (streakDiff !== 0) return streakDiff;
-          const aTime = a.continuousDurationSeconds || 999999;
-          const bTime = b.continuousDurationSeconds || 999999;
-          return aTime - bTime;
-        });
-      } else {
-        board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(board));
-    } catch (err) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify([]));
+  // Detect requested URL across direct invocation and Vercel rewrites
+  const candidateUrls = [
+    req.url,
+    req.headers['x-forwarded-url'],
+    req.headers['x-original-url'],
+    req.headers['x-vercel-original-path'],
+    req.headers['x-forwarded-uri'],
+    req.headers['x-matched-path']
+  ].filter(Boolean);
+
+  let rawPath = req.url || '/';
+  for (const candidate of candidateUrls) {
+    if (candidate.includes('/api/leaderboard') || candidate.startsWith('/api/')) {
+      rawPath = candidate;
+      break;
     }
-    return;
   }
 
-  // POST /api/leaderboard
-  if (req.method === 'POST' && pathname === '/api/leaderboard') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-      if (body.length > 50000) req.destroy();
-    });
+  const parsedUrl = new URL(rawPath, 'http://localhost');
+  const rawUrlPath = parsedUrl.pathname || '/';
+  const cleanPath = (rawUrlPath.length > 1) ? rawUrlPath.replace(/\/$/, '') : rawUrlPath;
+  const isLeaderboardApi = cleanPath === '/api/leaderboard' || rawPath.includes('/api/leaderboard');
 
-    req.on('end', async () => {
+  // --- API Endpoints ---
+  
+  if (isLeaderboardApi) {
+    if (req.method === 'GET') {
       try {
-        const payload = JSON.parse(body);
-        const { id, name, avatar, spokenMeows, continuousStreak, continuousDurationSeconds, continuousPace, tier } = payload;
-
-        if (!name || typeof name !== 'string') {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Valid player name is required' }));
-          return;
-        }
-
-        if (containsProfanity(name)) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Nickname contains inappropriate words. Please keep it wholesome!' }));
-          return;
-        }
-
         const board = await readLeaderboardAsync();
-        const playerId = id || `user_${Date.now()}`;
-        const existingIdx = board.findIndex(p => p.id === playerId || p.name.toLowerCase() === name.toLowerCase());
-
-        const newContinuousStreak = typeof continuousStreak === 'number' ? continuousStreak : 0;
-        const newDuration = typeof continuousDurationSeconds === 'number' ? continuousDurationSeconds : 0;
-        const newPace = typeof continuousPace === 'number' ? continuousPace : 0;
-
-        const updatedEntry = {
-          id: playerId,
-          name: name.trim(),
-          avatar: avatar || '🐱',
-          spokenMeows: typeof spokenMeows === 'number' ? spokenMeows : 0,
-          continuousStreak: newContinuousStreak,
-          continuousDurationSeconds: newDuration,
-          continuousPace: newPace,
-          tier: tier || 'Curious Kitten 🐾',
-          updatedAt: Date.now()
-        };
-
-        if (existingIdx >= 0) {
-          const old = board[existingIdx];
-          const shouldUpdateContinuous = 
-            (newContinuousStreak > (old.continuousStreak || 0)) ||
-            (newContinuousStreak === (old.continuousStreak || 0) && newDuration > 0 && (newDuration < (old.continuousDurationSeconds || 999999))) ||
-            !(old.continuousStreak);
-
-          board[existingIdx] = {
-            ...old,
-            ...updatedEntry,
-            spokenMeows: Math.max(old.spokenMeows || 0, updatedEntry.spokenMeows),
-            continuousStreak: shouldUpdateContinuous ? newContinuousStreak : (old.continuousStreak || 0),
-            continuousDurationSeconds: shouldUpdateContinuous ? newDuration : (old.continuousDurationSeconds || 0),
-            continuousPace: shouldUpdateContinuous ? newPace : (old.continuousPace || 0)
-          };
+        const sortBy = parsedUrl.searchParams.get('sort');
+        if (sortBy === 'continuous') {
+          board.sort((a, b) => {
+            const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
+            if (streakDiff !== 0) return streakDiff;
+            const aTime = a.continuousDurationSeconds || 999999;
+            const bTime = b.continuousDurationSeconds || 999999;
+            return aTime - bTime;
+          });
         } else {
-          board.push(updatedEntry);
+          board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
         }
-
-        board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
-        await writeLeaderboardAsync(board);
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, entry: updatedEntry, leaderboard: board }));
+        res.writeHead(200, { 
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        });
+        res.end(JSON.stringify(board));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify([]));
       }
-    });
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+        if (body.length > 50000) req.destroy();
+      });
+
+      req.on('end', async () => {
+        try {
+          const payload = JSON.parse(body);
+          const { id, name, avatar, spokenMeows, continuousStreak, continuousDurationSeconds, continuousPace, tier } = payload;
+
+          if (!name || typeof name !== 'string') {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: 'Valid player name is required' }));
+            return;
+          }
+
+          if (containsProfanity(name)) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: 'Nickname contains inappropriate words. Please keep it wholesome!' }));
+            return;
+          }
+
+          const board = await readLeaderboardAsync();
+          const playerId = id || `user_${Date.now()}`;
+          const existingIdx = board.findIndex(p => p.id === playerId || p.name.toLowerCase() === name.toLowerCase());
+
+          const newContinuousStreak = typeof continuousStreak === 'number' ? continuousStreak : 0;
+          const newDuration = typeof continuousDurationSeconds === 'number' ? continuousDurationSeconds : 0;
+          const newPace = typeof continuousPace === 'number' ? continuousPace : 0;
+
+          const updatedEntry = {
+            id: playerId,
+            name: name.trim(),
+            avatar: avatar || '🐱',
+            spokenMeows: typeof spokenMeows === 'number' ? spokenMeows : 0,
+            continuousStreak: newContinuousStreak,
+            continuousDurationSeconds: newDuration,
+            continuousPace: newPace,
+            tier: tier || 'Curious Kitten 🐾',
+            updatedAt: Date.now()
+          };
+
+          if (existingIdx >= 0) {
+            const old = board[existingIdx];
+            const shouldUpdateContinuous = 
+              (newContinuousStreak > (old.continuousStreak || 0)) ||
+              (newContinuousStreak === (old.continuousStreak || 0) && newDuration > 0 && (newDuration < (old.continuousDurationSeconds || 999999))) ||
+              !(old.continuousStreak);
+
+            board[existingIdx] = {
+              ...old,
+              ...updatedEntry,
+              spokenMeows: Math.max(old.spokenMeows || 0, updatedEntry.spokenMeows),
+              continuousStreak: shouldUpdateContinuous ? newContinuousStreak : (old.continuousStreak || 0),
+              continuousDurationSeconds: shouldUpdateContinuous ? newDuration : (old.continuousDurationSeconds || 0),
+              continuousPace: shouldUpdateContinuous ? newPace : (old.continuousPace || 0)
+            };
+          } else {
+            board.push(updatedEntry);
+          }
+
+          board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
+          await writeLeaderboardAsync(board);
+
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: true, entry: updatedEntry, leaderboard: board }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(405, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Method Not Allowed' }));
     return;
   }
 
   // --- Static File Serving ---
-  const safePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+  const safePath = (cleanPath === '/' || cleanPath === '' || cleanPath === '/index.html' || cleanPath === '/server.js') 
+    ? 'index.html' 
+    : cleanPath.replace(/^\//, '');
   let filePath = path.join(__dirname, 'public', safePath);
   if (!fs.existsSync(filePath)) {
     filePath = path.join(__dirname, safePath);
