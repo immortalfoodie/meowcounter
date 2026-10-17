@@ -14,6 +14,11 @@
 (function () {
   'use strict';
 
+  // Guard against server-side execution
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
   // --- Constants & Storage Keys ---
   const STORAGE_PREFIX = 'meow_counter_';
   const THEME_KEY = 'meow_theme_pref';
