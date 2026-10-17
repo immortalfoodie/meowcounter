@@ -205,7 +205,11 @@ const server = http.createServer((req, res) => {
   }
 
   // --- Static File Serving ---
-  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  const safePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+  let filePath = path.join(__dirname, 'public', safePath);
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, safePath);
+  }
 
   // Prevent directory traversal attacks
   if (!filePath.startsWith(__dirname)) {
