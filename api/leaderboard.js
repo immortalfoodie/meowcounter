@@ -1,5 +1,5 @@
 // Vercel Serverless Function: /api/leaderboard
-// Supports persistent storage via free Vercel KV / Upstash Redis if configured,
+// Supports persistent storage via free Upstash Redis / Vercel KV if configured,
 // with safe local/ephemeral fallback.
 
 const fs = require('fs');
@@ -40,6 +40,20 @@ function saveLocalData(data) {
   } catch (e) {}
 }
 
+function sendJson(res, statusCode, data) {
+  if (typeof res.status === 'function' && typeof res.json === 'function') {
+    return res.status(statusCode).json(data);
+  }
+  res.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Cache-Control': 'no-cache, no-store, must-revalidate'
+  });
+  return res.end(JSON.stringify(data));
+}
+
 module.exports = async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,10 +61,12 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    if (typeof res.status === 'function') return res.status(204).end();
+    res.writeHead(204);
+    return res.end();
   }
 
-  // --- UPSTASH / VERCEL KV SUPPORT (If user clicks 'Storage -> KV' on Vercel) ---
+  // --- UPSTASH / VERCEL KV SUPPORT ---
   const kvUrl = process.env.KV_REST_API_URL || 
                 process.env.UPSTASH_REDIS_REST_URL || 
                 process.env.STORAGE_REST_API_URL || 
@@ -63,7 +79,8 @@ module.exports = async (req, res) => {
   async function runKVCommand(commandArray) {
     if (!kvUrl || !kvToken) return null;
     try {
-      const response = await fetch(kvUrl, {
+      const endpoint = kvUrl.replace(/\/$/, '');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${kvToken}`,
@@ -79,22 +96,48 @@ module.exports = async (req, res) => {
     }
   }
 
+  // Helper to parse query from URL if not already on req.query
+  const urlObj = new URL(req.url, 'http://localhost');
+  const sortParam = (req.query && req.query.sort) || urlObj.searchParams.get('sort');
+  const debugParam = (req.query && req.query.debug) || urlObj.searchParams.get('debug');
+
   // GET /api/leaderboard
   if (req.method === 'GET') {
     try {
       let board = null;
+      let kvSuccess = false;
+
       if (kvUrl && kvToken) {
         const resVal = await runKVCommand(['GET', 'global_meow_leaderboard']);
         if (resVal) {
-          try { board = JSON.parse(resVal); } catch (e) {}
+          if (Array.isArray(resVal)) {
+            board = resVal;
+            kvSuccess = true;
+          } else if (typeof resVal === 'string') {
+            try { 
+              board = JSON.parse(resVal); 
+              kvSuccess = true;
+            } catch (e) {}
+          }
         }
       }
+
       if (!board) {
         board = getLocalData();
       }
 
-      const { sort } = req.query || {};
-      if (sort === 'continuous') {
+      if (debugParam) {
+        return sendJson(res, 200, {
+          debug: true,
+          kvConnected: !!(kvUrl && kvToken),
+          kvSuccess,
+          hasKvUrl: !!kvUrl,
+          hasKvToken: !!kvToken,
+          entriesCount: board.length
+        });
+      }
+
+      if (sortParam === 'continuous') {
         board.sort((a, b) => {
           const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
           if (streakDiff !== 0) return streakDiff;
@@ -106,32 +149,49 @@ module.exports = async (req, res) => {
         board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
       }
 
-      return res.status(200).json(board);
+      return sendJson(res, 200, board);
     } catch (err) {
       console.error('GET leaderboard error:', err);
-      return res.status(200).json(getLocalData());
+      return sendJson(res, 200, getLocalData());
     }
   }
 
   // POST /api/leaderboard
   if (req.method === 'POST') {
     try {
-      const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      let payload = req.body;
+      if (!payload || typeof payload !== 'object') {
+        try {
+          if (typeof req.body === 'string') {
+            payload = JSON.parse(req.body);
+          } else {
+            const chunks = [];
+            for await (const chunk of req) chunks.push(chunk);
+            const raw = Buffer.concat(chunks).toString();
+            if (raw) payload = JSON.parse(raw);
+          }
+        } catch (e) {}
+      }
+
       const { id, name, avatar, spokenMeows, continuousStreak, continuousDurationSeconds, continuousPace, tier } = payload || {};
 
       if (!name || typeof name !== 'string') {
-        return res.status(400).json({ error: 'Valid player name is required' });
+        return sendJson(res, 400, { error: 'Valid player name is required' });
       }
 
       if (containsProfanity(name)) {
-        return res.status(400).json({ error: 'Nickname contains inappropriate words. Please keep it wholesome!' });
+        return sendJson(res, 400, { error: 'Nickname contains inappropriate words. Please keep it wholesome!' });
       }
 
       let board = null;
       if (kvUrl && kvToken) {
         const resVal = await runKVCommand(['GET', 'global_meow_leaderboard']);
         if (resVal) {
-          try { board = JSON.parse(resVal); } catch (e) {}
+          if (Array.isArray(resVal)) {
+            board = resVal;
+          } else if (typeof resVal === 'string') {
+            try { board = JSON.parse(resVal); } catch (e) {}
+          }
         }
       }
       if (!board) {
@@ -180,15 +240,15 @@ module.exports = async (req, res) => {
 
       if (kvUrl && kvToken) {
         await runKVCommand(['SET', 'global_meow_leaderboard', JSON.stringify(board)]);
-      } else {
-        saveLocalData(board);
       }
+      saveLocalData(board);
 
-      return res.status(200).json({ success: true, entry: updatedEntry, leaderboard: board });
+      return sendJson(res, 200, { success: true, entry: updatedEntry, leaderboard: board });
     } catch (err) {
-      return res.status(400).json({ error: 'Invalid JSON payload' });
+      console.error('POST leaderboard error:', err);
+      return sendJson(res, 400, { error: 'Invalid JSON payload' });
     }
   }
 
-  return res.status(405).json({ error: 'Method Not Allowed' });
+  return sendJson(res, 405, { error: 'Method Not Allowed' });
 };
