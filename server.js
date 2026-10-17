@@ -121,7 +121,8 @@ function containsProfanity(text) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const rawPath = req.headers['x-matched-path'] || req.headers['x-forwarded-url'] || req.url;
+  const parsedUrl = url.parse(rawPath, true);
   const pathname = parsedUrl.pathname;
 
   // CORS headers
