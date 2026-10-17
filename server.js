@@ -14,13 +14,15 @@ const DATA_DIR = path.join(__dirname, 'data');
 const LEADERBOARD_FILE = path.join(DATA_DIR, 'leaderboard.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Ensure leaderboard file exists with empty real data (NO mock data)
-if (!fs.existsSync(LEADERBOARD_FILE)) {
-  fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify([], null, 2), 'utf8');
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(LEADERBOARD_FILE)) {
+    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify([], null, 2), 'utf8');
+  }
+} catch (e) {
+  // Read-only filesystem fallback
 }
 
 function readLeaderboard() {
@@ -232,7 +234,11 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🐱 MeowCounter server running on http://localhost:${PORT}`);
-  console.log(`📊 Leaderboard REST API ready at http://localhost:${PORT}/api/leaderboard`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`🐱 MeowCounter server running on http://localhost:${PORT}`);
+    console.log(`📊 Leaderboard REST API ready at http://localhost:${PORT}/api/leaderboard`);
+  });
+}
+
+module.exports = server;

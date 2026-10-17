@@ -75,31 +75,36 @@ module.exports = async (req, res) => {
 
   // GET /api/leaderboard
   if (req.method === 'GET') {
-    let board = null;
-    if (kvUrl && kvToken) {
-      const resVal = await runKVCommand(['GET', 'global_meow_leaderboard']);
-      if (resVal) {
-        try { board = JSON.parse(resVal); } catch (e) {}
+    try {
+      let board = null;
+      if (kvUrl && kvToken) {
+        const resVal = await runKVCommand(['GET', 'global_meow_leaderboard']);
+        if (resVal) {
+          try { board = JSON.parse(resVal); } catch (e) {}
+        }
       }
-    }
-    if (!board) {
-      board = getLocalData();
-    }
+      if (!board) {
+        board = getLocalData();
+      }
 
-    const { sort } = req.query;
-    if (sort === 'continuous') {
-      board.sort((a, b) => {
-        const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
-        if (streakDiff !== 0) return streakDiff;
-        const aTime = a.continuousDurationSeconds || 999999;
-        const bTime = b.continuousDurationSeconds || 999999;
-        return aTime - bTime;
-      });
-    } else {
-      board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
-    }
+      const { sort } = req.query || {};
+      if (sort === 'continuous') {
+        board.sort((a, b) => {
+          const streakDiff = (b.continuousStreak || 0) - (a.continuousStreak || 0);
+          if (streakDiff !== 0) return streakDiff;
+          const aTime = a.continuousDurationSeconds || 999999;
+          const bTime = b.continuousDurationSeconds || 999999;
+          return aTime - bTime;
+        });
+      } else {
+        board.sort((a, b) => (b.spokenMeows || 0) - (a.spokenMeows || 0));
+      }
 
-    return res.status(200).json(board);
+      return res.status(200).json(board);
+    } catch (err) {
+      console.error('GET leaderboard error:', err);
+      return res.status(200).json(getLocalData());
+    }
   }
 
   // POST /api/leaderboard
