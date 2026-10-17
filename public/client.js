@@ -58,6 +58,8 @@
   let audioContext = null;
   let analyserNode = null;
   let microphoneStream = null;
+  let currentMediaSource = null;
+  let currentFilterNode = null;
   let visualizerAnimFrame = null;
   
   // Rolling speed & continuous streak state
@@ -1690,6 +1692,15 @@
       if (!audioContext) audioContext = new AudioCtx();
       if (audioContext.state === 'suspended') await audioContext.resume();
 
+      if (currentMediaSource) {
+        try { currentMediaSource.disconnect(); } catch (e) {}
+        currentMediaSource = null;
+      }
+      if (currentFilterNode) {
+        try { currentFilterNode.disconnect(); } catch (e) {}
+        currentFilterNode = null;
+      }
+
       if (!microphoneStream) {
         microphoneStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -1704,6 +1715,7 @@
       }
 
       const source = audioContext.createMediaStreamSource(microphoneStream);
+      currentMediaSource = source;
       analyserNode = audioContext.createAnalyser();
       analyserNode.fftSize = 2048;
       analyserNode.smoothingTimeConstant = 0.25;
@@ -1714,6 +1726,7 @@
         highpass.type = 'highpass';
         highpass.frequency.value = 90;
         highpass.Q.value = 0.5;
+        currentFilterNode = highpass;
 
         source.connect(highpass);
         highpass.connect(analyserNode);
@@ -2056,11 +2069,51 @@
       statusMsg.textContent = 'Paused. Tap the button to start meowing!';
     }
 
+    // 1. Abort and release SpeechRecognition so browser speech audio input is detached
     if (recognition) {
-      try { recognition.stop(); } catch (e) {}
+      try {
+        recognition.abort();
+      } catch (e) {}
+      recognition = null;
     }
-    if (visualizerAnimFrame) cancelAnimationFrame(visualizerAnimFrame);
-    visualizerBar.style.width = '0%';
+
+    // 2. Disconnect Web Audio nodes from the graph
+    if (currentMediaSource) {
+      try { currentMediaSource.disconnect(); } catch (e) {}
+      currentMediaSource = null;
+    }
+    if (currentFilterNode) {
+      try { currentFilterNode.disconnect(); } catch (e) {}
+      currentFilterNode = null;
+    }
+
+    // 3. Stop and release ALL physical hardware tracks on the microphone stream
+    // This turns off the browser microphone icon in the tab and OS taskbar!
+    if (microphoneStream) {
+      try {
+        const tracks = microphoneStream.getTracks();
+        tracks.forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+      } catch (e) {}
+      microphoneStream = null;
+    }
+
+    // 4. Suspend audioContext to halt background audio thread processing
+    if (audioContext && audioContext.state !== 'closed' && audioContext.state !== 'suspended') {
+      try {
+        audioContext.suspend();
+      } catch (e) {}
+    }
+
+    // 5. Cancel visualizer frame loop
+    if (visualizerAnimFrame) {
+      cancelAnimationFrame(visualizerAnimFrame);
+      visualizerAnimFrame = null;
+    }
+    if (visualizerBar) visualizerBar.style.width = '0%';
+    acousticState = 'idle';
   }
 
   listenToggleBtn.addEventListener('click', () => {
@@ -2508,6 +2561,14 @@
   }
   document.addEventListener('touchstart', unlockAudioOnMobile, { once: true, passive: true });
   document.addEventListener('click', unlockAudioOnMobile, { once: true, passive: true });
+
+  // Ethical Privacy Protection: Release hardware microphone when tab/page is closed or hidden
+  window.addEventListener('beforeunload', () => {
+    if (isListening) stopListening();
+  });
+  window.addEventListener('pagehide', () => {
+    if (isListening) stopListening();
+  });
 
   // Initialize
   initTheme();
