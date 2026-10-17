@@ -124,6 +124,7 @@
   const bestStreakDisplay = document.getElementById('bestStreakDisplay');
   const bestStreakMeta = document.getElementById('bestStreakMeta');
   const streakTimerStatus = document.getElementById('streakTimerStatus');
+  const submitRunBtn = document.getElementById('submitRunBtn');
   const resetStreakBtn = document.getElementById('resetStreakBtn');
   const competitiveInfoBtn = document.getElementById('competitiveInfoBtn');
   const modeCasualBtn = document.getElementById('modeCasualBtn');
@@ -1016,6 +1017,15 @@
       const secs = streakDurationSeconds % 60;
       safetyProgressText.textContent = `${mins}m ${secs}s / 30 mins`;
     }
+    if (submitRunBtn) {
+      if (streakCount > 0) {
+        submitRunBtn.classList.add('pulse-active');
+        submitRunBtn.title = `Submit & lock in ${streakCount} meows (${formatTimer(streakDurationSeconds)}) right now without waiting 60s!`;
+      } else {
+        submitRunBtn.classList.remove('pulse-active');
+        submitRunBtn.title = 'Start meowing to build a continuous run first!';
+      }
+    }
   }
 
   function concludeContinuousRun(reason = 'silence') {
@@ -1073,6 +1083,13 @@
       showToast('🛑 30-Minute safety limit reached! Please touch grass 🌱 and drink water 💧!');
       if (navigator.vibrate) {
         try { navigator.vibrate([100, 100, 100, 100, 200]); } catch (e) {}
+      }
+    } else if (reason === 'manual_submit') {
+      if (finalCount > 0) {
+        showToast(`🏁 Run locked in & submitted! ${finalCount} meows in ${formatTimer(finalDuration)} (${finalPace} MPM) synced! 🎉`);
+        triggerVoiceVisuals(1);
+      } else {
+        showToast('Run ended. No meows recorded yet! 🐾');
       }
     } else if (reason === 'silence' && finalCount > 0) {
       showToast(`Continuous run ended (${finalCount} meows in ${formatTimer(finalDuration)} • ${finalPace} MPM). Total Daily Meows are safe! 💕`);
@@ -1170,6 +1187,17 @@
     if (navigator.vibrate) {
       try { navigator.vibrate(30); } catch (e) {}
     }
+  }
+
+  // Instant Submit for Continuous Run (locks in score and pace without waiting 1-minute silence!)
+  if (submitRunBtn) {
+    submitRunBtn.addEventListener('click', () => {
+      if (streakCount > 0) {
+        concludeContinuousRun('manual_submit');
+      } else {
+        showToast('Start meowing to build a continuous run first! 🐾');
+      }
+    });
   }
 
   // Independent Reset for Continuous Run (Leaves Total Daily Meows Safe!)
@@ -2022,7 +2050,11 @@
       mobileMicBtn.style.color = '';
     }
     statusDot.className = 'status-dot';
-    statusMsg.textContent = 'Paused. Tap the button to start meowing!';
+    if (streakCount > 0) {
+      statusMsg.innerHTML = 'Mic paused. Click <strong style="color:var(--accent-strawberry,#ff6b81);">"🏁 Submit Run"</strong> to lock your score now, or resume before the 60s limit!';
+    } else {
+      statusMsg.textContent = 'Paused. Tap the button to start meowing!';
+    }
 
     if (recognition) {
       try { recognition.stop(); } catch (e) {}
