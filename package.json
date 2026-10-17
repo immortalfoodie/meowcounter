@@ -1,0 +1,20 @@
+{
+  "name": "meow-counter",
+  "version": "1.0.0",
+  "description": "Voice Meow Tracker & Feline Community with 100% Client-Side Privacy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "meow",
+    "voice-counter",
+    "web-audio",
+    "speech-recognition"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
