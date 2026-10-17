@@ -51,8 +51,14 @@ module.exports = async (req, res) => {
   }
 
   // --- UPSTASH / VERCEL KV SUPPORT (If user clicks 'Storage -> KV' on Vercel) ---
-  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const kvUrl = process.env.KV_REST_API_URL || 
+                process.env.UPSTASH_REDIS_REST_URL || 
+                process.env.STORAGE_REST_API_URL || 
+                process.env.STORAGE_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || 
+                  process.env.UPSTASH_REDIS_REST_TOKEN || 
+                  process.env.STORAGE_REST_API_TOKEN || 
+                  process.env.STORAGE_TOKEN;
 
   async function runKVCommand(commandArray) {
     if (!kvUrl || !kvToken) return null;
