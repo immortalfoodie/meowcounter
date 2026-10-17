@@ -48,8 +48,8 @@
     { id: 'cosmic', name: 'Cosmic Meow Deity', min: 1000, badge: '🌌', desc: 'Ascended past mortal cats into the celestial nya heavens.' }
   ];
 
-  // Regex pattern matching variations of meow, nya, and cat sounds (including phonetic speech-to-text interpretations)
-  const MEOW_REGEX = /\b(m+e+o+w+s?|m+e+w+s?|m+i+a+o+w+s?|n+y+a+[a-z]*|n+y+a+n*|n+y+o+|n+y+u+|m+i+a+o+u*|m+i+a+u*|m+i+u+|m+y+u+|m+i+o+|p+u+r+r+s?|m+e+o+w*|m+a+o+|m+a+u+|n+e+k+o+s?|m+o+w+s?|m+e+\s*o+u+t|m+e+\s*o+w|m+e+\s*h+o+w|n+e+a+r+|n+o+w+)\b/gi;
+  // Regex pattern matching variations of meow, nya, and cat sounds (including rapid phonetic interpretations)
+  const MEOW_REGEX = /\b(m+e+o+w+s?|m+e+w+s?|m+i+a+o+w*|m+i+a+u*|m+i+a+o*|n+y+a+[a-z]*|n+y+a+n*|n+y+o+|n+y+u+|m+i+o+|p+u+r+r+s?|m+a+o+|m+a+u+|n+e+k+o+s?|m+o+w+s?|m+e+\s*o+u+t|m+e+\s*o+w|m+e+\s*h+o+w|n+e+a+r+|n+o+w+|m+e+o+w+|m+e+l+t|m+e+o+|m+i+l+k|m+a+i+l|n+e+o+s?|n+y+a+h*|m+e+w+l+s?)\b/gi;
 
   // --- State ---
   let isListening = false;
@@ -85,6 +85,8 @@
   let vocalBurstStartTime = 0;
   let lastMeowRegisteredTime = 0;
   let lastRegisteredMeowTimestamp = 0;
+  let lastAcousticMeowTimestamp = 0;
+  let lastSpeechMeowTimestamp = 0;
   let ambientNoiseFloor = 0.012;
   let peakVocalEnergyInBurst = 0;
   // Pitch-tracking burst state (voiced-meow detector)
@@ -1106,10 +1108,11 @@
   // --- Unified Meow Dispatcher (Deduplicates Acoustic & Speech Fusion) ---
   function registerSpokenMeowUnified(source = 'Vocal Meow 🐾') {
     const now = Date.now();
-    // Refractory cooldown: prevent double-firing within 180ms
-    if (now - lastRegisteredMeowTimestamp < 180) {
+    // Refractory cooldown: prevent double-firing within 110ms (allows fast continuous meows up to 9/sec!)
+    if (now - lastRegisteredMeowTimestamp < 110) {
       return;
     }
+    lastAcousticMeowTimestamp = now;
     lastRegisteredMeowTimestamp = now;
     registerSpokenMeow(1, source);
   }
@@ -1639,13 +1642,21 @@
           streamCountMap.set(i, detectedCount);
           
           const now = Date.now();
-          // In Hybrid mode: if an acoustic meow was already counted in the last 650ms,
-          // don't double count! Just update the visual feedback chip!
-          if (now - lastRegisteredMeowTimestamp < 650) {
-            addFeedChip(`Recognized: "${matches[matches.length - 1]}" ✨`, true);
+          const timeSinceAcoustic = now - lastAcousticMeowTimestamp;
+
+          // If delta is 1 and acoustic just counted this exact syllable within 150ms,
+          // simply update visual feedback chip without duplicate counting
+          if (delta === 1 && timeSinceAcoustic < 150) {
+            addFeedChip(`Speech Match: "${matches[matches.length - 1]}" ✨`, true);
           } else {
-            lastRegisteredMeowTimestamp = now;
-            registerSpokenMeow(delta, matches[matches.length - 1]);
+            // If delta > 1 and acoustic just counted 1, credit (delta - 1). Otherwise credit all delta meows!
+            const countToCredit = (delta > 1 && timeSinceAcoustic < 150) ? (delta - 1) : delta;
+            if (countToCredit > 0) {
+              lastRegisteredMeowTimestamp = now;
+              lastSpeechMeowTimestamp = now;
+              registerSpokenMeow(countToCredit, matches[matches.length - 1]);
+              addFeedChip(`+${countToCredit} "${matches[matches.length - 1]}"`, true);
+            }
           }
         }
 
@@ -1653,14 +1664,11 @@
           streamCountMap.delete(i);
           if (matches.length > 0) {
             addFeedChip(`"${transcript.trim()}" (×${matches.length})`, true);
-          } else {
-            // Web speech recognized an English phrase that is NOT a meow (e.g. "hello", "testing")
-            suppressAcousticUntil = performance.now() + 850;
+          } else if (transcript.trim().length > 4 && !transcript.includes('m') && !transcript.includes('ny')) {
+            // Clear non-meow conversational phrase: brief gentle suppression
+            suppressAcousticUntil = performance.now() + 250;
             addFeedChip(`"${transcript.trim()}"`);
           }
-        } else if (matches.length === 0 && transcript.trim().length > 0) {
-          // Interim non-meow speech actively suppresses acoustic detector from mistaking "hello" for a meow
-          suppressAcousticUntil = performance.now() + 650;
         }
       }
     };
@@ -1909,18 +1917,17 @@
     const finalizeBurst = (endTime) => {
       const duration = endTime - vocalBurstStartTime;
       const voicedRatio = burstVoicedMs / Math.max(1, burstActiveMs);
-      const rearmOk = !burstRearmLevel || peakVocalEnergyInBurst >= burstRearmLevel * 2;
 
-      if (duration < 80 || duration > 2400) return;
-      if (burstVoicedMs < 55 || voicedRatio < minVoicedRatio) return;
-      if (peakVocalEnergyInBurst < onThreshold * 1.15 || !rearmOk) return;
-      if (endTime - lastMeowRegisteredTime < 160) return;
+      if (duration < 60 || duration > 3200) return;
+      if (burstVoicedMs < 30 || voicedRatio < 0.28) return;
+      if (peakVocalEnergyInBurst < onThreshold * 1.05) return;
+      if (endTime - lastMeowRegisteredTime < 95) return;
 
-      // Guard: if speech recognition recently recognized non-meow speech (e.g. "hello"), suppress acoustic trigger
+      // Guard: if speech recognition recently recognized non-meow speech, suppress acoustic trigger
       if (endTime < suppressAcousticUntil) return;
 
       const validPitches = burstPitches.filter(p => p >= PITCH_MIN_HZ && p <= PITCH_MAX_HZ);
-      if (validPitches.length < 3) return;
+      if (validPitches.length < 2) return;
 
       const sorted = validPitches.slice().sort((a, b) => a - b);
       const median = sorted[Math.floor(sorted.length / 2)];
@@ -1929,27 +1936,18 @@
       const pitchGlideRatio = p10 > 0 ? (p90 / p10) : 1;
 
       // Meow Identification Criteria:
-      // 1. High-pitch / kitten meow (median >= 420 Hz): Normal human speech ("hello", "testing") is 85-255 Hz.
-      //    Sounds at >= 420 Hz are high kitten cries, falsetto meows, and squeaky nyas.
-      // 2. Melodic pitch glide (pitchGlideRatio >= 1.25): Real meows ("me-OOWW", "nyaa~") have a pronounced
-      //    glissando / pitch contour (>25% pitch sweep), whereas normal speech like "hello" is flat/monotone.
-      const isHighPitchMeow = median >= 420;
-      const hasMeowGlide = pitchGlideRatio >= 1.25;
+      // 1. High-pitch / kitten meow (median >= 360 Hz)
+      // 2. Melodic pitch glide (pitchGlideRatio >= 1.08)
+      // 3. Natural human voice meow formant (median 130-950 Hz with clear harmonic voicing)
+      const isHighPitchMeow = median >= 360;
+      const hasMeowGlide = pitchGlideRatio >= 1.08;
+      const isVoicedHumanMeow = (median >= 130 && median <= 950 && voicedRatio >= 0.38 && duration >= 70 && duration <= 1400);
 
-      const currentMode = detectionModeSelect ? detectionModeSelect.value : 'hybrid';
-      let isAcousticMeow = false;
-      if (isHighPitchMeow || hasMeowGlide) {
-        isAcousticMeow = true;
-      } else if (currentMode === 'acoustic' && pitchGlideRatio >= 1.18) {
-        // In offline acoustic-only mode without speech-to-text, allow slightly softer glide
-        isAcousticMeow = true;
-      }
-
-      // Flat conversational speech like "hello", "hi", "testing", "one two" is REJECTED!
+      const isAcousticMeow = isHighPitchMeow || hasMeowGlide || isVoicedHumanMeow;
       if (!isAcousticMeow) return;
 
       lastMeowRegisteredTime = endTime;
-      const voiceType = median >= 520 ? 'high-pitch' : (median >= 420 ? 'kitten' : 'glide');
+      const voiceType = median >= 500 ? 'high-pitch' : (median >= 360 ? 'kitten' : 'vocal');
       registerSpokenMeowUnified(`Acoustic Meow 🐾 · ${voiceType} ~${Math.round(median)}Hz`);
     };
 
@@ -1969,32 +1967,57 @@
       if (rms >= offThreshold) {
         burstQuietSince = 0;
         burstActiveMs += dt;
-        // Voiced time only counts outside the self-sound window, so our own chirp
-        // can never complete a meow, but a real meow overlapping it still can.
         if (voiced && !inSelfSound) {
           burstVoicedMs += dt;
           burstPitches.push(pitch);
         }
         if (rms > peakVocalEnergyInBurst) peakVocalEnergyInBurst = rms;
 
-        // Split rapid "meow-meow-meow": a sustained energy dip between syllables
-        if (rms < peakVocalEnergyInBurst * 0.3 && burstVoicedMs >= 55) {
+        // Continuous Syllable Splitting for Rapid "meow-meow-meow"
+        // 1. Natural volume dip between syllables (approx 32% dip from peak):
+        const dipThreshold = peakVocalEnergyInBurst * 0.68;
+        const currentBurstDuration = now - vocalBurstStartTime;
+
+        if (rms < dipThreshold && burstVoicedMs >= 35 && currentBurstDuration >= 90) {
           if (!burstDipSince) {
             burstDipSince = now;
-          } else if (now - burstDipSince >= 60) {
+          } else if (now - burstDipSince >= 30) {
             finalizeBurst(burstDipSince);
-            burstRearmLevel = rms;
-            acousticState = 'idle';
+            // Re-arm immediately for the next continuous meow without needing complete silence!
+            vocalBurstStartTime = now;
+            peakVocalEnergyInBurst = rms;
+            burstActiveMs = dt;
+            burstVoicedMs = voiced ? dt : 0;
+            burstPitches = (voiced && !inSelfSound) ? [pitch] : [];
+            burstDipSince = 0;
+            burstQuietSince = 0;
+            burstRearmLevel = 0;
             return;
           }
         } else {
           burstDipSince = 0;
         }
+
+        // 2. Maximum single-meow auto-slicer for continuous legato meowing:
+        // When someone chants or sings meows continuously without full volume dips,
+        // rhythmically slice every 330ms if voiced!
+        if (currentBurstDuration >= 330 && burstVoicedMs >= 90 && burstPitches.length >= 3) {
+          finalizeBurst(now);
+          vocalBurstStartTime = now;
+          peakVocalEnergyInBurst = rms;
+          burstActiveMs = dt;
+          burstVoicedMs = voiced ? dt : 0;
+          burstPitches = (voiced && !inSelfSound) ? [pitch] : [];
+          burstDipSince = 0;
+          burstQuietSince = 0;
+          burstRearmLevel = 0;
+          return;
+        }
       } else {
-        // Hangover: brief gaps inside one meow (e.g. "m-eow") don't split it
+        // Quiet gap: finalize when sound stops
         if (!burstQuietSince) {
           burstQuietSince = now;
-        } else if (now - burstQuietSince >= 80) {
+        } else if (now - burstQuietSince >= 50) {
           finalizeBurst(burstQuietSince);
           burstRearmLevel = 0;
           acousticState = 'idle';
@@ -2002,9 +2025,9 @@
         }
       }
 
-      // Continuous sound protection: long voiced singing gets 2.4 s, unvoiced drones only 1.5 s
+      // Continuous sound protection: long voiced singing gets 3.2 s, unvoiced drones only 1.5 s
       const voicedRatioSoFar = burstVoicedMs / Math.max(1, burstActiveMs);
-      const maxLen = voicedRatioSoFar >= 0.5 ? 2400 : 1500;
+      const maxLen = voicedRatioSoFar >= 0.4 ? 3200 : 1500;
       if (now - vocalBurstStartTime > maxLen) {
         acousticState = 'noise_rejected';
         burstQuietSince = 0;
