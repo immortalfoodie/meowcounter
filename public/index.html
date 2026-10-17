@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=21">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
 </head>
 <body>
@@ -55,6 +55,12 @@
           <span>🎖️</span>
           <span class="btn-text">Achievements</span>
           <span class="achieve-pill-count" id="headerAchieveCount">0/8</span>
+        </button>
+
+        <!-- Certificate Showcase & Download Button -->
+        <button id="openCertificateBtn" class="pill-btn secondary-pill cert-nav-btn" aria-label="Download Certificate of Achievement">
+          <span>📜</span>
+          <span class="btn-text">Certificate</span>
         </button>
 
         <!-- Stats Drawer Button -->
@@ -644,6 +650,9 @@
 
           <!-- Actions -->
           <div class="modal-actions-row">
+            <button id="statsCertBtn" class="pill-btn secondary-pill cert-shortcut-btn">
+              <span>📜</span> My Certificate
+            </button>
             <button id="copySummaryBtn" class="pill-btn primary-pill">
               <span>📋</span> Copy Daily Report
             </button>
@@ -798,6 +807,223 @@
       </div>
     </div>
 
+    <!-- ===================================================================== -->
+    <!-- Neo-Brutalism Certificate of Achievement Modal -->
+    <!-- ===================================================================== -->
+    <div class="stats-modal-backdrop neo-cert-backdrop" id="certificateModalBackdrop" aria-hidden="true">
+      <div class="stats-modal neo-cert-modal" role="dialog" aria-labelledby="certModalTitle">
+        <div class="modal-pull-handle" aria-hidden="true"></div>
+        
+        <div class="stats-modal-header neo-modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon neo-title-icon">📜</span>
+            <div>
+              <h2 id="certModalTitle" class="neo-modal-title">Feline Honours Diploma</h2>
+              <span class="modal-subtitle neo-modal-sub">Neo-Brutalist Feline Certificate &bull; 100% Client-Side Generated</span>
+            </div>
+          </div>
+          <button id="closeCertModalBtn" class="close-modal-btn neo-close-btn" aria-label="Close Certificate">&times;</button>
+        </div>
+
+        <div class="stats-modal-body neo-cert-modal-body">
+          
+          <!-- Interactive Preview Card -->
+          <div class="neo-cert-scroll-wrap">
+            <div class="neo-cert-card" id="neoCertCard">
+              <!-- Decorative Neo-Brutalist Corner Studs -->
+              <div class="neo-pin neo-pin-tl" aria-hidden="true">★</div>
+              <div class="neo-pin neo-pin-tr" aria-hidden="true">★</div>
+              <div class="neo-pin neo-pin-bl" aria-hidden="true">★</div>
+              <div class="neo-pin neo-pin-br" aria-hidden="true">★</div>
+
+              <!-- Top Tape Banner -->
+              <div class="neo-cert-top-tape">
+                <span class="neo-tape-text">★ MEOWCOUNTER.NYA OFFICIAL ACADEMY &bull; CERTIFICATE OF SUPREME FELINE EXCELLENCE ★</span>
+              </div>
+
+              <!-- Header Block -->
+              <div class="neo-cert-header">
+                <div class="neo-dept-badge">DEPARTMENT OF MEOWS &amp; PURRS</div>
+                <h1 class="neo-cert-main-title">OFFICIAL DIPLOMA OF EXCELLENCE</h1>
+                <p class="neo-cert-declaration">
+                  This supreme feline distinction certifies that the extraordinary individual named below has meowed to their heart's content with authentic vocal mastery.
+                </p>
+                <div class="neo-cert-badge-sticker">
+                  <span>⚡ 100% VERIFIED FELINE 🐾</span>
+                </div>
+              </div>
+
+              <!-- Recipient Section -->
+              <div class="neo-recipient-section">
+                <span class="neo-presented-tag">PROUDLY CONFERRED UPON</span>
+                <div class="neo-recipient-box">
+                  <span class="neo-recipient-avatar" id="certAvatarDisplay">🐱</span>
+                  <div class="neo-recipient-info">
+                    <span class="neo-recipient-name" id="certNicknameDisplay">StrawberryNeko</span>
+                    <span class="neo-recipient-sub">DISTINGUISHED FELINE VOCALIST</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Score Matrix Showcase (Neo-Brutalist Grid) -->
+              <div class="neo-scores-matrix">
+                <!-- HERO TILE: Personal Best Score -->
+                <div class="neo-score-box neo-box-yellow">
+                  <div class="neo-box-tag">RECORD BEST SCORE 🔥</div>
+                  <div class="neo-box-number" id="certBestScoreDisplay">0</div>
+                  <div class="neo-box-unit">MEOWS</div>
+                  <div class="neo-box-caption">Continuous Streak</div>
+                </div>
+
+                <!-- Total Daily Spoken Meows -->
+                <div class="neo-score-box neo-box-pink">
+                  <div class="neo-box-tag">TOTAL SPOKEN 🎙️</div>
+                  <div class="neo-box-number" id="certTotalMeowsDisplay">0</div>
+                  <div class="neo-box-unit">MEOWS</div>
+                  <div class="neo-box-caption">Daily Session Volume</div>
+                </div>
+
+                <!-- Max Speed Cadence -->
+                <div class="neo-score-box neo-box-mint">
+                  <div class="neo-box-tag">PEAK CADENCE ⚡</div>
+                  <div class="neo-box-number" id="certSpeedDisplay">0.0</div>
+                  <div class="neo-box-unit">MPM</div>
+                  <div class="neo-box-caption">Meows Per Minute</div>
+                </div>
+
+                <!-- Feline Rank / Tier -->
+                <div class="neo-score-box neo-box-purple">
+                  <div class="neo-box-tag">FELINE CLASSIFICATION 👑</div>
+                  <div class="neo-box-tier-val" id="certTierDisplay">Curious Kitten 🐾</div>
+                  <div class="neo-box-caption">Official Mastery Tier</div>
+                </div>
+              </div>
+
+              <!-- Footer Verification & Stamp Details -->
+              <div class="neo-cert-footer-row">
+                <!-- Metadata & Barcode -->
+                <div class="neo-footer-meta">
+                  <div class="neo-meta-line">
+                    <span class="neo-meta-key">DATE ISSUED:</span>
+                    <strong class="neo-meta-val" id="certDateDisplay">OCTOBER 17, 2026</strong>
+                  </div>
+                  <div class="neo-meta-line">
+                    <span class="neo-meta-key">SERIAL NUMBER:</span>
+                    <strong class="neo-meta-val neo-id-code" id="certIdDisplay">#NYA-2026-MC8942</strong>
+                  </div>
+                  <div class="neo-barcode-container">
+                    <div class="neo-barcode-bars" aria-hidden="true">
+                      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <span class="neo-barcode-text">AUTHENTICATED CLIENT-SIDE &bull; ZERO SERVER RECORDINGS</span>
+                  </div>
+                </div>
+
+                <!-- Circular Brutalist Stamp -->
+                <div class="neo-footer-stamp">
+                  <div class="neo-stamp-circle">
+                    <div class="stamp-border-outer">
+                      <div class="stamp-border-inner">
+                        <span class="stamp-top-txt">★ MEOWCOUNTER.NYA ★</span>
+                        <span class="stamp-icon">🐾</span>
+                        <span class="stamp-mid-txt">OFFICIAL SEAL</span>
+                        <span class="stamp-bot-txt">100% NYA CERTIFIED</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Signature Block -->
+                <div class="neo-footer-sig">
+                  <div class="neo-sig-draw">Professor Whiskers 🐾</div>
+                  <div class="neo-sig-hr"></div>
+                  <div class="neo-sig-title">Supreme Chancellor of Feline Sounds</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons in Neo-Brutalist Style -->
+          <div class="neo-cert-actions-bar">
+            <button id="downloadCertBtn" class="neo-btn neo-btn-download" title="Download ultra high-resolution PNG image">
+              <span class="neo-btn-icon">📥</span>
+              <span class="neo-btn-text">Download Certificate (PNG)</span>
+            </button>
+            <button id="copyCertImageBtn" class="neo-btn neo-btn-copy" title="Copy certificate image to clipboard">
+              <span class="neo-btn-icon">📋</span>
+              <span class="neo-btn-text">Copy Image</span>
+            </button>
+            <button id="closeCertBottomBtn" class="neo-btn neo-btn-neutral">
+              <span class="neo-btn-text">Done</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- Logout Suggestion Modal (Download Certificate Before Sign Out) -->
+    <!-- ===================================================================== -->
+    <div class="stats-modal-backdrop neo-logout-backdrop" id="logoutPromptModalBackdrop" aria-hidden="true">
+      <div class="stats-modal neo-logout-modal" role="dialog" aria-labelledby="logoutPromptTitle">
+        <div class="modal-pull-handle" aria-hidden="true"></div>
+
+        <div class="stats-modal-header neo-modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon neo-title-icon">🐾</span>
+            <div>
+              <h2 id="logoutPromptTitle" class="neo-modal-title">Wait! Save Your Legacy First!</h2>
+              <span class="modal-subtitle neo-modal-sub">Download your certificate for future reference before logging out</span>
+            </div>
+          </div>
+          <button id="closeLogoutPromptBtn" class="close-modal-btn neo-close-btn" aria-label="Cancel">&times;</button>
+        </div>
+
+        <div class="stats-modal-body neo-logout-body">
+          <div class="neo-logout-card">
+            <div class="neo-logout-icon-row">
+              <span class="neo-huge-cat">📜🐱✨</span>
+            </div>
+            
+            <h3 class="neo-logout-headline">
+              Leaving so soon, <span id="logoutUserHighlight" class="neo-user-hl">Meower</span>?
+            </h3>
+            
+            <p class="neo-logout-text">
+              You achieved a record best score of <strong id="logoutScoreHighlight" class="neo-score-hl">0 meows</strong>! If you sign out of this device, you can keep your official Neo-Brutalist certificate as permanent proof of your meowing mastery.
+            </p>
+
+            <!-- Mini Brutalist Score Pill -->
+            <div class="neo-logout-score-badge">
+              <div class="badge-header">TODAY'S BEST RECORD</div>
+              <div class="badge-value" id="logoutScoreVal">0 MEOWS</div>
+              <div class="badge-footer">100% Client-Side Certificate</div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="neo-logout-actions">
+            <button id="logoutDownloadCertBtn" class="neo-btn neo-btn-download neo-btn-full" title="Download your certificate right now">
+              <span class="neo-btn-icon">📥</span>
+              <span class="neo-btn-text">Download Certificate First 🐾</span>
+            </button>
+            <div class="neo-logout-secondary-row">
+              <button id="confirmSignOutBtn" class="neo-btn neo-btn-danger">
+                <span class="neo-btn-icon">🚪</span>
+                <span class="neo-btn-text">Just Sign Out</span>
+              </button>
+              <button id="cancelSignOutBtn" class="neo-btn neo-btn-neutral">
+                <span class="neo-btn-text">Stay Signed In</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Footer -->
     <footer class="app-footer">
       <p>Made with 💖 for cat lovers worldwide &bull; 100% Client-Side Audio &bull; Zero Server Recordings &bull; <a href="#disclaimerCard" class="footer-link">Health &amp; Fun Disclaimer</a></p>
@@ -823,6 +1049,10 @@
       <span class="mobile-btn-icon">🎖️</span>
       <span class="mobile-btn-label">Badges</span>
     </button>
+    <button id="mobileCertBtn" class="mobile-bar-btn" aria-label="Open Certificate">
+      <span class="mobile-btn-icon">📜</span>
+      <span class="mobile-btn-label">Diploma</span>
+    </button>
     <button id="mobileStatsBtn" class="mobile-bar-btn" aria-label="Open Daily Stats">
       <span class="mobile-btn-icon">📊</span>
       <span class="mobile-btn-label">Stats</span>
@@ -832,6 +1062,6 @@
   <!-- Notification Toast & Achievement Ring Overlay -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="client.js?v=20"></script>
+  <script src="client.js?v=21"></script>
 </body>
 </html>

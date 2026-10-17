@@ -243,6 +243,34 @@
   const achieveCurrentRankDisplay = document.getElementById('achieveCurrentRankDisplay');
   const testChimeBtn = document.getElementById('testChimeBtn');
 
+  // Certificate Modal Elements
+  const openCertificateBtn = document.getElementById('openCertificateBtn');
+  const statsCertBtn = document.getElementById('statsCertBtn');
+  const mobileCertBtn = document.getElementById('mobileCertBtn');
+  const certificateModalBackdrop = document.getElementById('certificateModalBackdrop');
+  const closeCertModalBtn = document.getElementById('closeCertModalBtn');
+  const closeCertBottomBtn = document.getElementById('closeCertBottomBtn');
+  const downloadCertBtn = document.getElementById('downloadCertBtn');
+  const copyCertImageBtn = document.getElementById('copyCertImageBtn');
+  const certAvatarDisplay = document.getElementById('certAvatarDisplay');
+  const certNicknameDisplay = document.getElementById('certNicknameDisplay');
+  const certBestScoreDisplay = document.getElementById('certBestScoreDisplay');
+  const certTotalMeowsDisplay = document.getElementById('certTotalMeowsDisplay');
+  const certSpeedDisplay = document.getElementById('certSpeedDisplay');
+  const certTierDisplay = document.getElementById('certTierDisplay');
+  const certDateDisplay = document.getElementById('certDateDisplay');
+  const certIdDisplay = document.getElementById('certIdDisplay');
+
+  // Logout Suggestion Modal Elements
+  const logoutPromptModalBackdrop = document.getElementById('logoutPromptModalBackdrop');
+  const closeLogoutPromptBtn = document.getElementById('closeLogoutPromptBtn');
+  const logoutUserHighlight = document.getElementById('logoutUserHighlight');
+  const logoutScoreHighlight = document.getElementById('logoutScoreHighlight');
+  const logoutScoreVal = document.getElementById('logoutScoreVal');
+  const logoutDownloadCertBtn = document.getElementById('logoutDownloadCertBtn');
+  const confirmSignOutBtn = document.getElementById('confirmSignOutBtn');
+  const cancelSignOutBtn = document.getElementById('cancelSignOutBtn');
+
   // --- Helper: Format Today's Date YYYY-MM-DD ---
   function getTodayKey() {
     const d = new Date();
@@ -334,9 +362,7 @@
       if (signOutBtn) {
         signOutBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          currentUser = null;
-          saveUserProfile(null);
-          showToast('Signed out! You can sign in anytime with a new nickname. 🐾');
+          openLogoutPromptModal();
         });
       }
 
@@ -677,8 +703,18 @@
           <div class="profile-stats-pill">
             <span class="stat-pill">🎙️ ${dailyStats.spokenMeows} Total</span>
             <span class="stat-pill">🔥 ${bestStreakCount} Run (${bestStreakDur} &bull; ${bestStreakPace})</span>
+            <button class="pill-btn secondary-pill cert-inline-btn" id="leaderboardCertBtn" style="padding: 4px 10px; font-size: 11px;">
+              <span>📜</span> Certificate
+            </button>
           </div>
         `;
+        const lbCertBtn = document.getElementById('leaderboardCertBtn');
+        if (lbCertBtn) {
+          lbCertBtn.addEventListener('click', () => {
+            closeLeaderboardModal();
+            setTimeout(openCertificateModal, 150);
+          });
+        }
       } else {
         profileCard.innerHTML = `
           <div class="profile-info">
@@ -2222,12 +2258,520 @@
   if (mobileStatsBtn) mobileStatsBtn.addEventListener('click', openStatsModal);
   if (mobileLeaderboardBtn) mobileLeaderboardBtn.addEventListener('click', openLeaderboardModal);
 
+  // --- Neo-Brutalism Certificate Generator & System ---
+  function renderCertificatePreview() {
+    const userNickname = currentUser ? currentUser.nickname : 'Anonymous Meower';
+    const userAvatar = currentUser ? currentUser.avatar : '🐱';
+    const bestScore = dailyStats.bestContinuousStreak || dailyStats.bestStreak || dailyStats.spokenMeows || 0;
+    const totalMeows = dailyStats.spokenMeows || 0;
+    const speed = (dailyStats.maxSpeedMPM || 0).toFixed(1);
+    const tier = getCurrentTier();
+    
+    const now = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = now.toLocaleDateString('en-US', options).toUpperCase();
+    
+    // Deterministic or user-based serial number
+    const userSuffix = currentUser ? currentUser.id.slice(-4).toUpperCase() : 'NYA9';
+    const certSerial = `#NYA-${now.getFullYear()}-${userSuffix}`;
+
+    if (certAvatarDisplay) certAvatarDisplay.textContent = userAvatar;
+    if (certNicknameDisplay) certNicknameDisplay.textContent = userNickname;
+    if (certBestScoreDisplay) certBestScoreDisplay.textContent = bestScore.toLocaleString();
+    if (certTotalMeowsDisplay) certTotalMeowsDisplay.textContent = totalMeows.toLocaleString();
+    if (certSpeedDisplay) certSpeedDisplay.textContent = speed;
+    if (certTierDisplay) certTierDisplay.textContent = `${tier.name} ${tier.badge}`;
+    if (certDateDisplay) certDateDisplay.textContent = dateStr;
+    if (certIdDisplay) certIdDisplay.textContent = certSerial;
+  }
+
+  function openCertificateModal() {
+    renderCertificatePreview();
+    if (certificateModalBackdrop) {
+      certificateModalBackdrop.classList.add('open');
+      certificateModalBackdrop.setAttribute('aria-hidden', 'false');
+      if (mobileBottomBar) mobileBottomBar.style.transform = 'translateY(150%)';
+    }
+  }
+
+  function closeCertificateModal() {
+    if (certificateModalBackdrop) {
+      certificateModalBackdrop.classList.remove('open');
+      certificateModalBackdrop.setAttribute('aria-hidden', 'true');
+      if (mobileBottomBar) mobileBottomBar.style.transform = '';
+    }
+  }
+
+  // Generate ultra high-definition Neo-Brutalist Certificate Canvas (1400 x 980 px)
+  function generateCertificateCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1400;
+    canvas.height = 980;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    const userNickname = currentUser ? currentUser.nickname : 'Anonymous Meower';
+    const userAvatar = currentUser ? currentUser.avatar : '🐱';
+    const bestScore = dailyStats.bestContinuousStreak || dailyStats.bestStreak || dailyStats.spokenMeows || 0;
+    const totalMeows = dailyStats.spokenMeows || 0;
+    const speed = (dailyStats.maxSpeedMPM || 0).toFixed(1);
+    const tier = getCurrentTier();
+    
+    const now = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = now.toLocaleDateString('en-US', options).toUpperCase();
+    const userSuffix = currentUser ? currentUser.id.slice(-4).toUpperCase() : 'NYA9';
+    const certSerial = `#NYA-${now.getFullYear()}-${userSuffix}`;
+
+    // 1. Background fill: warm luxury cream diploma paper
+    ctx.fillStyle = '#FFFDF0';
+    ctx.fillRect(0, 0, 1400, 980);
+
+    // Subtle Neo-Brutalist dot texture
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+    for (let x = 32; x < 1368; x += 26) {
+      for (let y = 32; y < 948; y += 26) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 2. Thick Outer Brutalist Border
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#111111';
+    ctx.strokeRect(24, 24, 1352, 932);
+
+    // Inner thin border
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#111111';
+    ctx.strokeRect(36, 36, 1328, 908);
+
+    // 3. Corner Neo-Brutalist Stud Pins
+    const pins = [
+      { x: 44, y: 44 },
+      { x: 1332, y: 44 },
+      { x: 44, y: 912 },
+      { x: 1332, y: 912 }
+    ];
+    pins.forEach(p => {
+      ctx.fillStyle = '#111111';
+      ctx.fillRect(p.x + 3, p.y + 3, 24, 24);
+      ctx.fillStyle = '#FFE600';
+      ctx.fillRect(p.x, p.y, 24, 24);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#111111';
+      ctx.strokeRect(p.x, p.y, 24, 24);
+      ctx.fillStyle = '#111111';
+      ctx.font = '900 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', p.x + 12, p.y + 12);
+    });
+
+    // 4. Top Tape Banner
+    const tapeW = 760;
+    const tapeH = 44;
+    const tapeX = (1400 - tapeW) / 2;
+    const tapeY = 56;
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(tapeX + 5, tapeY + 5, tapeW, tapeH);
+    ctx.fillStyle = '#FFE600';
+    ctx.fillRect(tapeX, tapeY, tapeW, tapeH);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#111111';
+    ctx.strokeRect(tapeX, tapeY, tapeW, tapeH);
+
+    ctx.fillStyle = '#111111';
+    ctx.font = '800 14px "Fredoka", "Quicksand", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★ MEOWCOUNTER.NYA OFFICIAL ACADEMY • CERTIFICATE OF SUPREME FELINE EXCELLENCE ★', 700, tapeY + 22);
+
+    // 5. Header Section
+    const deptW = 280;
+    const deptH = 26;
+    const deptX = (1400 - deptW) / 2;
+    const deptY = 120;
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(deptX, deptY, deptW, deptH);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 11.5px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DEPARTMENT OF MEOWS & PURRS', 700, deptY + 13);
+
+    ctx.fillStyle = '#111111';
+    ctx.font = '900 38px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('OFFICIAL DIPLOMA OF EXCELLENCE', 700, 185);
+
+    ctx.fillStyle = '#444444';
+    ctx.font = '600 16px "Quicksand", sans-serif';
+    ctx.fillText('This supreme feline distinction certifies that the extraordinary individual named below', 700, 226);
+    ctx.fillText("has meowed to their heart's content with authentic vocal mastery.", 700, 248);
+
+    // Sticker Badge (tilted)
+    ctx.save();
+    ctx.translate(1120, 175);
+    ctx.rotate(-0.06);
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(4, 4, 190, 36);
+    ctx.fillStyle = '#FF5C8D';
+    ctx.fillRect(0, 0, 190, 36);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#111111';
+    ctx.strokeRect(0, 0, 190, 36);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 13px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚡ 100% VERIFIED FELINE 🐾', 95, 18);
+    ctx.restore();
+
+    // 6. Recipient Section
+    ctx.fillStyle = '#666666';
+    ctx.font = '800 13px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('PROUDLY CONFERRED UPON', 700, 295);
+
+    const recipW = 640;
+    const recipH = 88;
+    const recipX = (1400 - recipW) / 2;
+    const recipY = 312;
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(recipX + 6, recipY + 6, recipW, recipH);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(recipX, recipY, recipW, recipH);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#111111';
+    ctx.strokeRect(recipX, recipY, recipW, recipH);
+
+    ctx.font = '46px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(userAvatar, recipX + 60, recipY + 44);
+
+    ctx.fillStyle = '#111111';
+    ctx.font = '900 32px "Fredoka", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(userNickname, recipX + 115, recipY + 46);
+
+    ctx.fillStyle = '#777777';
+    ctx.font = '800 12px "Fredoka", sans-serif';
+    ctx.fillText('DISTINGUISHED FELINE VOCALIST', recipX + 115, recipY + 68);
+
+    // 7. Neo-Brutalist Scores Matrix (4 Tiles)
+    const tileW = 295;
+    const tileH = 150;
+    const tileGap = 20;
+    const startTileX = (1400 - (tileW * 4 + tileGap * 3)) / 2;
+    const tileY = 430;
+
+    const tilesData = [
+      {
+        bg: '#FFE600',
+        tag: 'RECORD BEST SCORE 🔥',
+        num: String(bestScore),
+        unit: 'MEOWS',
+        caption: 'Continuous Streak'
+      },
+      {
+        bg: '#FF70A6',
+        tag: 'TOTAL SPOKEN 🎙️',
+        num: String(totalMeows),
+        unit: 'MEOWS',
+        caption: 'Daily Session Volume'
+      },
+      {
+        bg: '#00F5D4',
+        tag: 'PEAK CADENCE ⚡',
+        num: String(speed),
+        unit: 'MPM',
+        caption: 'Meows Per Minute'
+      },
+      {
+        bg: '#C8B6FF',
+        tag: 'FELINE CLASSIFICATION 👑',
+        isTier: true,
+        tierName: tier.name,
+        tierBadge: tier.badge,
+        caption: 'Official Mastery Tier'
+      }
+    ];
+
+    tilesData.forEach((t, i) => {
+      const tx = startTileX + i * (tileW + tileGap);
+      ctx.fillStyle = '#111111';
+      ctx.fillRect(tx + 5, tileY + 5, tileW, tileH);
+      ctx.fillStyle = t.bg;
+      ctx.fillRect(tx, tileY, tileW, tileH);
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = '#111111';
+      ctx.strokeRect(tx, tileY, tileW, tileH);
+
+      ctx.fillStyle = '#111111';
+      ctx.font = '900 11.5px "Fredoka", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(t.tag, tx + tileW / 2, tileY + 14);
+
+      if (t.isTier) {
+        ctx.font = '900 21px "Fredoka", sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${t.tierName} ${t.tierBadge}`, tx + tileW / 2, tileY + 75);
+      } else {
+        ctx.font = '900 48px "Fredoka", sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(t.num, tx + tileW / 2, tileY + 70);
+
+        ctx.font = '800 12.5px "Fredoka", sans-serif';
+        ctx.fillText(t.unit, tx + tileW / 2, tileY + 104);
+      }
+
+      ctx.font = '700 11px "Quicksand", sans-serif';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(t.caption, tx + tileW / 2, tileY + tileH - 12);
+    });
+
+    // 8. Divider line
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#111111';
+    ctx.beginPath();
+    ctx.moveTo(90, 620);
+    ctx.lineTo(1310, 620);
+    ctx.stroke();
+
+    // 9. Footer Details
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#444444';
+    ctx.font = '900 14px "Fredoka", sans-serif';
+    ctx.fillText('DATE ISSUED:', 100, 650);
+    ctx.fillStyle = '#111111';
+    ctx.fillText(dateStr, 220, 650);
+
+    ctx.fillStyle = '#444444';
+    ctx.fillText('SERIAL NUMBER:', 100, 680);
+    ctx.fillStyle = '#111111';
+    ctx.font = '700 14px "Courier New", monospace';
+    ctx.fillText(certSerial, 245, 680);
+
+    // Barcode Simulation
+    const barX = 100;
+    const barY = 720;
+    const barPattern = [3, 1, 4, 2, 5, 2, 1, 4, 3, 2, 5, 1, 3, 4, 2, 5, 1, 3, 2, 4, 2, 5, 1, 4, 3, 2, 4, 1, 5, 3];
+    let curBx = barX;
+    ctx.fillStyle = '#111111';
+    barPattern.forEach(w => {
+      ctx.fillRect(curBx, barY, w, 32);
+      curBx += w + 3;
+    });
+
+    ctx.fillStyle = '#666666';
+    ctx.font = '800 10.5px "Fredoka", sans-serif';
+    ctx.fillText('AUTHENTICATED CLIENT-SIDE • ZERO SERVER RECORDINGS', 100, 762);
+
+    // Center: Circular Neo-Brutalist Stamp
+    ctx.save();
+    ctx.translate(700, 715);
+    ctx.rotate(-0.21); // -12 degrees
+    const stampR = 64;
+
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#E60039';
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.arc(0, 0, stampR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, stampR - 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#E60039';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 9.5px "Fredoka", sans-serif';
+    ctx.fillText('★ MEOWCOUNTER.NYA ★', 0, -32);
+
+    ctx.font = '28px sans-serif';
+    ctx.fillText('🐾', 0, -2);
+
+    ctx.font = '900 10.5px "Fredoka", sans-serif';
+    ctx.fillText('OFFICIAL SEAL', 0, 24);
+
+    ctx.font = '800 8.5px "Fredoka", sans-serif';
+    ctx.fillText('100% NYA CERTIFIED', 0, 39);
+    ctx.restore();
+
+    // Right: Signature Block
+    const sigX = 1100;
+    const sigY = 665;
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(sigX, sigY);
+    ctx.rotate(-0.05);
+    ctx.fillStyle = '#111111';
+    ctx.font = 'bold 26px "Brush Script MT", "Dancing Script", cursive, sans-serif';
+    ctx.fillText('Professor Whiskers 🐾', 0, 0);
+    ctx.restore();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#111111';
+    ctx.beginPath();
+    ctx.moveTo(sigX - 120, sigY + 15);
+    ctx.lineTo(sigX + 120, sigY + 15);
+    ctx.stroke();
+
+    ctx.fillStyle = '#555555';
+    ctx.font = '800 11.5px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Supreme Chancellor of Feline Sounds', sigX, sigY + 36);
+
+    return canvas;
+  }
+
+  // Trigger Client-Side PNG Download
+  function downloadCertificate() {
+    try {
+      const canvas = generateCertificateCanvas();
+      const safeName = (currentUser ? currentUser.nickname : 'Feline_Champion').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `MeowCounter_Certificate_${safeName}.png`;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          const url = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        showToast(`📜 Certificate downloaded! Keep it safe, ${currentUser ? currentUser.nickname : 'Meower'}! 🐾`);
+        if (sfxEnabled) playCuteMeowTone(880);
+      }, 'image/png');
+    } catch (e) {
+      console.error('Failed to generate certificate download', e);
+      showToast('Could not generate download. Please take a screenshot of the certificate preview! 🐾');
+    }
+  }
+
+  // Copy Certificate Image to Clipboard
+  async function copyCertificateImage() {
+    try {
+      const canvas = generateCertificateCanvas();
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          showToast('Image copy not supported on this browser.');
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.write) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showToast('Certificate image copied to clipboard! 📋✨');
+            return;
+          } catch (err) {}
+        }
+        showToast('Direct image clipboard copy not supported. Click Download PNG instead! 📥');
+      }, 'image/png');
+    } catch (e) {
+      showToast('Click Download PNG to save your certificate! 📥');
+    }
+  }
+
+  // --- Logout Suggestion & Interception Logic ---
+  function openLogoutPromptModal() {
+    const bestScore = dailyStats.bestContinuousStreak || dailyStats.bestStreak || dailyStats.spokenMeows || 0;
+    const name = currentUser ? currentUser.nickname : 'Meower';
+
+    if (logoutUserHighlight) logoutUserHighlight.textContent = name;
+    if (logoutScoreHighlight) logoutScoreHighlight.textContent = `${bestScore.toLocaleString()} meow${bestScore === 1 ? '' : 's'}`;
+    if (logoutScoreVal) logoutScoreVal.textContent = `${bestScore.toLocaleString()} MEOWS`;
+
+    if (logoutPromptModalBackdrop) {
+      logoutPromptModalBackdrop.classList.add('open');
+      logoutPromptModalBackdrop.setAttribute('aria-hidden', 'false');
+      if (mobileBottomBar) mobileBottomBar.style.transform = 'translateY(150%)';
+    }
+  }
+
+  function closeLogoutPromptModal() {
+    if (logoutPromptModalBackdrop) {
+      logoutPromptModalBackdrop.classList.remove('open');
+      logoutPromptModalBackdrop.setAttribute('aria-hidden', 'true');
+      if (mobileBottomBar) mobileBottomBar.style.transform = '';
+    }
+  }
+
+  function performSignOut() {
+    currentUser = null;
+    saveUserProfile(null);
+    closeLogoutPromptModal();
+    showToast('Signed out! You can sign in anytime with a new nickname. 🐾');
+  }
+
+  // Wire Certificate & Logout Listeners
+  if (openCertificateBtn) openCertificateBtn.addEventListener('click', openCertificateModal);
+  if (statsCertBtn) statsCertBtn.addEventListener('click', () => {
+    closeStatsModal();
+    setTimeout(openCertificateModal, 150);
+  });
+  if (mobileCertBtn) mobileCertBtn.addEventListener('click', openCertificateModal);
+  if (closeCertModalBtn) closeCertModalBtn.addEventListener('click', closeCertificateModal);
+  if (closeCertBottomBtn) closeCertBottomBtn.addEventListener('click', closeCertificateModal);
+  if (downloadCertBtn) downloadCertBtn.addEventListener('click', downloadCertificate);
+  if (copyCertImageBtn) copyCertImageBtn.addEventListener('click', copyCertificateImage);
+  if (certificateModalBackdrop) {
+    certificateModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === certificateModalBackdrop) closeCertificateModal();
+    });
+  }
+
+  if (closeLogoutPromptBtn) closeLogoutPromptBtn.addEventListener('click', closeLogoutPromptModal);
+  if (cancelSignOutBtn) cancelSignOutBtn.addEventListener('click', closeLogoutPromptModal);
+  if (confirmSignOutBtn) confirmSignOutBtn.addEventListener('click', performSignOut);
+  if (logoutDownloadCertBtn) {
+    logoutDownloadCertBtn.addEventListener('click', () => {
+      downloadCertificate();
+      logoutDownloadCertBtn.innerHTML = `
+        <span class="neo-btn-icon">✅</span>
+        <span class="neo-btn-text">Downloaded! Ready to Sign Out?</span>
+      `;
+    });
+  }
+  if (logoutPromptModalBackdrop) {
+    logoutPromptModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === logoutPromptModalBackdrop) closeLogoutPromptModal();
+    });
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeStatsModal();
       closeLeaderboardModal();
       closeAuthModal();
       closeAchievementsModal();
+      closeCertificateModal();
+      closeLogoutPromptModal();
     }
   });
 
@@ -2566,6 +3110,8 @@
         closeLeaderboardModal();
         closeAuthModal();
         closeAchievementsModal();
+        closeCertificateModal();
+        closeLogoutPromptModal();
       }
     }
   }

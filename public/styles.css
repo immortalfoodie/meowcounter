@@ -3451,3 +3451,717 @@ button, .mascot-wrapper, .manual-meow-btn, .pill-btn, .icon-btn {
   color: var(--text-muted);
   font-family: monospace;
 }
+
+/* ==========================================================================
+   Neo-Brutalism Certificate System & Logout Suggestion Styles
+   ========================================================================== */
+
+/* Modal Overrides for Neo-Brutalism Theme */
+.neo-cert-modal {
+  max-width: 860px !important;
+  background: var(--bg-card);
+  border: 4px solid #111111 !important;
+  border-radius: 12px !important;
+  box-shadow: 10px 10px 0px #111111 !important;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-theme="dark-kawaii"] .neo-cert-modal,
+[data-theme="dark-kawaii"] .neo-logout-modal {
+  border-color: #ffe600 !important;
+  box-shadow: 10px 10px 0px #ffe600 !important;
+}
+
+.neo-modal-header {
+  background: #ffe600;
+  color: #111111;
+  border-bottom: 3.5px solid #111111;
+  padding: 16px 22px;
+}
+
+.neo-modal-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: #111111;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.neo-modal-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #333333;
+}
+
+.neo-close-btn {
+  background: #ffffff !important;
+  border: 2.5px solid #111111 !important;
+  box-shadow: 3px 3px 0px #111111 !important;
+  border-radius: 6px !important;
+  font-weight: 900 !important;
+  color: #111111 !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.neo-close-btn:hover {
+  background: #ff476d !important;
+  color: #ffffff !important;
+  transform: translate(-1.5px, -1.5px) !important;
+  box-shadow: 4px 4px 0px #111111 !important;
+}
+
+.neo-close-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #111111 !important;
+}
+
+.neo-cert-modal-body {
+  padding: 22px;
+  background: #f7f3ea;
+  max-height: calc(88vh - 75px);
+  overflow-y: auto;
+}
+
+[data-theme="dark-kawaii"] .neo-cert-modal-body,
+[data-theme="dark-kawaii"] .neo-logout-body {
+  background: #181329;
+}
+
+.neo-cert-scroll-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 4px 12px 4px;
+}
+
+/* --- The Neo-Brutalist Certificate Card --- */
+.neo-cert-card {
+  position: relative;
+  background: #fffdf2;
+  border: 4px solid #111111;
+  border-radius: 8px;
+  box-shadow: 8px 8px 0px #111111;
+  padding: 24px 28px 20px 28px;
+  color: #111111;
+  text-align: center;
+  max-width: 760px;
+  min-width: 580px;
+  margin: 0 auto;
+  user-select: text;
+}
+
+/* Corner Stud Pins */
+.neo-pin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #ffe600;
+  border: 2px solid #111111;
+  box-shadow: 2px 2px 0px #111111;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #111111;
+  z-index: 2;
+}
+
+.neo-pin-tl { top: 8px; left: 8px; }
+.neo-pin-tr { top: 8px; right: 8px; }
+.neo-pin-bl { bottom: 8px; left: 8px; }
+.neo-pin-br { bottom: 8px; right: 8px; }
+
+/* Top Tape Banner */
+.neo-cert-top-tape {
+  background: #ffe600;
+  border: 2.5px solid #111111;
+  box-shadow: 3px 3px 0px #111111;
+  padding: 5px 14px;
+  display: inline-block;
+  margin-bottom: 14px;
+  border-radius: 4px;
+}
+
+.neo-tape-text {
+  font-family: var(--font-heading);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #111111;
+  text-transform: uppercase;
+}
+
+/* Header & Department */
+.neo-cert-header {
+  margin-bottom: 16px;
+}
+
+.neo-dept-badge {
+  display: inline-block;
+  background: #111111;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.neo-cert-main-title {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 900;
+  color: #111111;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 4px 0 6px 0;
+  line-height: 1.15;
+}
+
+.neo-cert-declaration {
+  font-size: 12px;
+  font-weight: 600;
+  color: #383838;
+  max-width: 540px;
+  margin: 0 auto 10px auto;
+  line-height: 1.4;
+}
+
+.neo-cert-badge-sticker {
+  display: inline-block;
+  background: #ff5c8d;
+  color: #ffffff;
+  border: 2.5px solid #111111;
+  box-shadow: 3px 3px 0px #111111;
+  padding: 4px 14px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+  border-radius: 4px;
+}
+
+/* Recipient Section */
+.neo-recipient-section {
+  margin: 14px 0 16px 0;
+}
+
+.neo-presented-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+  color: #555555;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.neo-recipient-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #ffffff;
+  border: 3px solid #111111;
+  box-shadow: 4px 4px 0px #111111;
+  border-radius: 6px;
+  padding: 10px 24px;
+  min-width: 320px;
+  max-width: 520px;
+}
+
+.neo-recipient-avatar {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.15));
+}
+
+.neo-recipient-info {
+  text-align: left;
+}
+
+.neo-recipient-name {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  color: #111111;
+  display: block;
+  line-height: 1.2;
+}
+
+.neo-recipient-sub {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #666666;
+  text-transform: uppercase;
+  display: block;
+}
+
+/* Scores Matrix Grid */
+.neo-scores-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.neo-score-box {
+  border: 3px solid #111111;
+  border-radius: 6px;
+  box-shadow: 4px 4px 0px #111111;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 105px;
+}
+
+.neo-box-yellow { background: #ffe600; color: #111111; }
+.neo-box-pink { background: #ff70a6; color: #111111; }
+.neo-box-mint { background: #00f5d4; color: #111111; }
+.neo-box-purple { background: #c8b6ff; color: #111111; }
+
+.neo-box-tag {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.neo-box-number {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  margin: 2px 0;
+}
+
+.neo-box-unit {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.neo-box-tier-val {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 4px 0;
+}
+
+.neo-box-caption {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.8;
+  margin-top: 3px;
+}
+
+/* Footer & Stamps */
+.neo-cert-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  border-top: 3px solid #111111;
+  padding-top: 14px;
+  margin-top: 16px;
+}
+
+.neo-footer-meta {
+  flex: 1.2;
+  text-align: left;
+  font-size: 10.5px;
+}
+
+.neo-meta-line {
+  margin-bottom: 4px;
+}
+
+.neo-meta-key {
+  font-weight: 900;
+  color: #444444;
+  margin-right: 6px;
+}
+
+.neo-meta-val {
+  font-weight: 800;
+  color: #111111;
+}
+
+.neo-id-code {
+  font-family: 'Courier New', monospace;
+  background: #ffffff;
+  border: 1.5px solid #111111;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.neo-barcode-container {
+  margin-top: 8px;
+}
+
+.neo-barcode-bars {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+  align-items: stretch;
+}
+
+.neo-barcode-bars span {
+  background: #111111;
+  width: 2px;
+}
+
+.neo-barcode-bars span:nth-child(2n) { width: 3px; }
+.neo-barcode-bars span:nth-child(3n) { width: 1px; }
+.neo-barcode-bars span:nth-child(5n) { width: 4px; }
+
+.neo-barcode-text {
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #666666;
+  text-transform: uppercase;
+  display: block;
+  margin-top: 3px;
+}
+
+/* Stamp */
+.neo-footer-stamp {
+  flex: 0 0 auto;
+}
+
+.neo-stamp-circle {
+  width: 90px;
+  height: 90px;
+  border: 3px dashed #e60039;
+  border-radius: 50%;
+  color: #e60039;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-12deg);
+  padding: 3px;
+  transition: transform 0.2s ease;
+}
+
+.neo-stamp-circle:hover {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.stamp-border-inner {
+  border: 1.5px solid #e60039;
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.stamp-top-txt {
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.stamp-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin: 1px 0;
+}
+
+.stamp-mid-txt {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.stamp-bot-txt {
+  font-size: 6.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  line-height: 1;
+}
+
+/* Signature Block */
+.neo-footer-sig {
+  flex: 1;
+  text-align: center;
+  min-width: 170px;
+}
+
+.neo-sig-draw {
+  font-family: 'Brush Script MT', 'Dancing Script', 'Segoe Script', cursive, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111111;
+  transform: rotate(-3deg);
+  margin-bottom: 2px;
+}
+
+.neo-sig-hr {
+  width: 100%;
+  height: 2.5px;
+  background: #111111;
+  margin-bottom: 3px;
+}
+
+.neo-sig-title {
+  font-size: 9px;
+  font-weight: 800;
+  color: #555555;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Action Buttons */
+.neo-cert-actions-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-family: var(--font-heading);
+  font-size: 13.5px;
+  font-weight: 800;
+  border: 3px solid #111111;
+  box-shadow: 4px 4px 0px #111111;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.neo-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #111111;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #111111;
+}
+
+.neo-btn-download {
+  background: #ffe600;
+  color: #111111;
+}
+
+.neo-btn-download:hover {
+  background: #fff033;
+}
+
+.neo-btn-copy {
+  background: #00f5d4;
+  color: #111111;
+}
+
+.neo-btn-copy:hover {
+  background: #4efbe2;
+}
+
+.neo-btn-danger {
+  background: #ff476d;
+  color: #ffffff;
+}
+
+.neo-btn-danger:hover {
+  background: #ff2a54;
+}
+
+.neo-btn-neutral {
+  background: #ffffff;
+  color: #111111;
+}
+
+.neo-btn-neutral:hover {
+  background: #f0f0f0;
+}
+
+/* ==========================================================================
+   Logout Suggestion Dialog Styles (Neo-Brutalist Alert)
+   ========================================================================== */
+.neo-logout-modal {
+  max-width: 520px !important;
+  background: var(--bg-card);
+  border: 4px solid #111111 !important;
+  border-radius: 12px !important;
+  box-shadow: 10px 10px 0px #111111 !important;
+  padding: 0;
+  overflow: hidden;
+}
+
+.neo-logout-body {
+  padding: 22px;
+}
+
+.neo-logout-card {
+  background: #fffdf0;
+  border: 3px solid #111111;
+  box-shadow: 6px 6px 0px #111111;
+  padding: 20px 18px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.neo-logout-icon-row {
+  margin-bottom: 10px;
+}
+
+.neo-huge-cat {
+  font-size: 42px;
+  display: inline-block;
+  animation: pawWiggle 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pawWiggle {
+  0% { transform: translateY(0px) rotate(-4deg); }
+  100% { transform: translateY(-6px) rotate(4deg); }
+}
+
+.neo-logout-headline {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 800;
+  color: #111111;
+  margin: 0 0 10px 0;
+  line-height: 1.3;
+}
+
+.neo-user-hl {
+  background: #ffe600;
+  padding: 2px 8px;
+  border: 1.5px solid #111111;
+  box-shadow: 2px 2px 0px #111111;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.neo-logout-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444444;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+.neo-score-hl {
+  color: #ff2a6d;
+  font-size: 15px;
+}
+
+.neo-logout-score-badge {
+  display: inline-block;
+  background: #ffe600;
+  border: 2.5px solid #111111;
+  box-shadow: 3px 3px 0px #111111;
+  padding: 8px 18px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.neo-logout-score-badge .badge-header {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #111111;
+}
+
+.neo-logout-score-badge .badge-value {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 900;
+  color: #111111;
+  line-height: 1.1;
+  margin: 2px 0;
+}
+
+.neo-logout-score-badge .badge-footer {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #444444;
+}
+
+.neo-logout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.neo-btn-full {
+  width: 100%;
+}
+
+.neo-logout-secondary-row {
+  display: flex;
+  gap: 10px;
+}
+
+.neo-logout-secondary-row .neo-btn {
+  flex: 1;
+}
+
+/* Responsiveness for Neo-Brutalist elements */
+@media (max-width: 680px) {
+  .neo-cert-card {
+    min-width: 100%;
+    padding: 18px 14px 14px 14px;
+  }
+  .neo-scores-matrix {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .neo-recipient-box {
+    min-width: 0;
+    width: 100%;
+    padding: 8px 12px;
+  }
+  .neo-cert-main-title {
+    font-size: 20px;
+  }
+  .neo-cert-footer-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .neo-footer-meta, .neo-footer-sig {
+    text-align: center;
+    width: 100%;
+  }
+  .neo-barcode-bars {
+    justify-content: center;
+  }
+}
+
